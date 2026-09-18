@@ -112,8 +112,8 @@ app.get('/dashboard', requireAuth, async (req, res) => {
 
     try {
         // Get totals
-        const expenseRow = await dbGet(`SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE user_id = ? AND type = 'EXPENSE' AND cast(strftime('%m', transaction_date) as integer) = ? AND cast(strftime('%Y', transaction_date) as integer) = ?`, [userId, currentMonth, currentYear]);
-        const incomeRow = await dbGet(`SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE user_id = ? AND type = 'INCOME' AND cast(strftime('%m', transaction_date) as integer) = ? AND cast(strftime('%Y', transaction_date) as integer) = ?`, [userId, currentMonth, currentYear]);
+        const expenseRow = await dbGet(`SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE user_id = ? AND type = 'EXPENSE' AND EXTRACT(MONTH FROM transaction_date) = ? AND EXTRACT(YEAR FROM transaction_date) = ?`, [userId, currentMonth, currentYear]);
+        const incomeRow = await dbGet(`SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE user_id = ? AND type = 'INCOME' AND EXTRACT(MONTH FROM transaction_date) = ? AND EXTRACT(YEAR FROM transaction_date) = ?`, [userId, currentMonth, currentYear]);
         
         const totalExpense = expenseRow.total;
         const totalIncome = incomeRow.total;
@@ -165,7 +165,7 @@ app.get('/transactions', requireAuth, async (req, res) => {
             params.push(`%${search}%`, `%${search}%`);
         }
         if (month) {
-            query += ` AND strftime('%Y-%m', t.transaction_date) = ?`;
+            query += ` AND to_char(t.transaction_date, 'YYYY-MM') = ?`;
             params.push(month);
         }
         if (type) {
@@ -215,7 +215,7 @@ app.get('/budgets', requireAuth, async (req, res) => {
     try {
         const budgets = await dbQuery(`
             SELECT b.*, c.name as category_name, c.icon as category_icon, c.color as category_color,
-                   (SELECT COALESCE(SUM(amount), 0) FROM transactions t WHERE t.user_id = b.user_id AND t.category_id = b.category_id AND cast(strftime('%m', t.transaction_date) as integer) = b.month AND cast(strftime('%Y', t.transaction_date) as integer) = b.year) as spent_amount 
+                   (SELECT COALESCE(SUM(amount), 0) FROM transactions t WHERE t.user_id = b.user_id AND t.category_id = b.category_id AND EXTRACT(MONTH FROM t.transaction_date) = b.month AND EXTRACT(YEAR FROM t.transaction_date) = b.year) as spent_amount 
             FROM budgets b 
             JOIN categories c ON b.category_id = c.id 
             WHERE b.user_id = ? AND b.month = ? AND b.year = ?
@@ -322,7 +322,7 @@ app.get('/analytics', requireAuth, async (req, res) => {
         const transactions = await dbQuery(`
             SELECT t.*, c.name as category_name 
             FROM transactions t JOIN categories c ON t.category_id = c.id 
-            WHERE t.user_id = ? AND t.type = 'EXPENSE' AND cast(strftime('%m', t.transaction_date) as integer) = ? AND cast(strftime('%Y', t.transaction_date) as integer) = ?
+            WHERE t.user_id = ? AND t.type = 'EXPENSE' AND EXTRACT(MONTH FROM t.transaction_date) = ? AND EXTRACT(YEAR FROM t.transaction_date) = ?
         `, [userId, currentMonth, currentYear]);
 
         // Group by category
@@ -370,7 +370,7 @@ app.post('/api/affordability', requireAuth, async (req, res) => {
     const currentYear = now.getFullYear();
 
     try {
-        const expenseRow = await dbGet(`SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE user_id = ? AND type = 'EXPENSE' AND cast(strftime('%m', transaction_date) as integer) = ? AND cast(strftime('%Y', transaction_date) as integer) = ?`, [userId, currentMonth, currentYear]);
+        const expenseRow = await dbGet(`SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE user_id = ? AND type = 'EXPENSE' AND EXTRACT(MONTH FROM transaction_date) = ? AND EXTRACT(YEAR FROM transaction_date) = ?`, [userId, currentMonth, currentYear]);
         const remainingAllowance = req.session.user.monthly_allowance - expenseRow.total;
         const actualDisposable = remainingAllowance; 
 
@@ -629,12 +629,12 @@ app.post('/api/ai-advisor', requireAuth, async (req, res) => {
         const transactions = await dbQuery(`
             SELECT t.amount, t.description, c.name as category_name 
             FROM transactions t JOIN categories c ON t.category_id = c.id 
-            WHERE t.user_id = ? AND t.type = 'EXPENSE' AND cast(strftime('%m', t.transaction_date) as integer) = ? AND cast(strftime('%Y', t.transaction_date) as integer) = ?
+            WHERE t.user_id = ? AND t.type = 'EXPENSE' AND EXTRACT(MONTH FROM t.transaction_date) = ? AND EXTRACT(YEAR FROM t.transaction_date) = ?
         `, [userId, currentMonth, currentYear]);
 
         const budgets = await dbQuery(`
             SELECT b.amount, c.name as category_name,
-                   (SELECT COALESCE(SUM(amount), 0) FROM transactions t WHERE t.user_id = b.user_id AND t.category_id = b.category_id AND cast(strftime('%m', t.transaction_date) as integer) = b.month AND cast(strftime('%Y', t.transaction_date) as integer) = b.year) as spent_amount 
+                   (SELECT COALESCE(SUM(amount), 0) FROM transactions t WHERE t.user_id = b.user_id AND t.category_id = b.category_id AND EXTRACT(MONTH FROM t.transaction_date) = b.month AND EXTRACT(YEAR FROM t.transaction_date) = b.year) as spent_amount 
             FROM budgets b JOIN categories c ON b.category_id = c.id 
             WHERE b.user_id = ? AND b.month = ? AND b.year = ?
         `, [userId, currentMonth, currentYear]);
@@ -683,3 +683,5 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
+
+module.exports = app;
