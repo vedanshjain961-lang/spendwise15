@@ -8,7 +8,7 @@ const { GoogleGenAI } = require('@google/genai');
 const { dbGet, dbRun, dbQuery } = require('./database');
 
 // Initialize Gemini Client
-const ai = new GoogleGenAI({});
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 
 const app = express();
