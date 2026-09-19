@@ -32,6 +32,9 @@
                         <li class="nav-item"><a class="nav-link active" href="/categories"><i class="bi bi-tags-fill me-2"></i> Categories</a></li>
                         <li class="nav-item"><a class="nav-link" href="/analytics"><i class="bi bi-bar-chart-fill me-2"></i> Analytics</a></li>
                         <li class="nav-item mt-3"><a class="nav-link" href="/ai-advisor"><i class="bi bi-stars me-2 text-gold"></i> AI Advisor</a></li>
+                        <% if (user && user.is_admin) { %>
+                        <li class="nav-item mt-2"><a class="nav-link text-danger fw-bold" href="/admin"><i class="bi bi-shield-lock-fill me-2"></i> Admin Panel</a></li>
+                        <% } %>
                     </ul>
                 </div>
             </nav>
