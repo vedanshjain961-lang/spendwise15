@@ -654,11 +654,11 @@ Here are their budgets for this month: \n`;
             prompt += `- ₹${t.amount} for "${t.description}" (${t.category_name})\n`;
         });
 
-        prompt += `\nBased on this data, provide a short, actionable, and encouraging financial assessment (max 3-4 paragraphs). Tell them where they are spending too much, where they can save money, and give 2 specific tips to improve their habits. Format your response in Markdown. Do not use generic advice, rely strictly on their actual spending data. Keep it concise.`;
+        prompt += `\nBased on this data, provide an extremely short and actionable financial assessment (Maximum 2 short sentences total). Do not use generic advice, rely strictly on their actual spending data. Format your response in Markdown.`;
 
         // Call Gemini
         const response = await ai.models.generateContent({
-            model: 'gemini-3.6-flash',
+            model: 'gemini-2.5-flash',
             contents: prompt,
         });
 
