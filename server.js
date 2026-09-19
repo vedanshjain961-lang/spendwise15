@@ -125,6 +125,19 @@ app.get('/admin', requireAdmin, async (req, res) => {
     }
 });
 
+app.post('/admin/reset-password', requireAdmin, async (req, res) => {
+    try {
+        const { target_user_id } = req.body;
+        // Hash the temporary password '12345678'
+        const newHash = await bcrypt.hash('12345678', 10);
+        await dbRun(`UPDATE users SET password_hash = ? WHERE id = ?`, [newHash, target_user_id]);
+        res.redirect('/admin');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error resetting password");
+    }
+});
+
 // Helper formatting functions for views
 app.locals.formatCurrency = (amount) => '₹' + Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 app.locals.formatDate = (dateString) => {
