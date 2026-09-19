@@ -109,6 +109,7 @@
                                         <th>College</th>
                                         <th>Role</th>
                                         <th>Joined</th>
+                                        <th>Device / IP</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -128,6 +129,10 @@
                                                     <% } %>
                                                 </td>
                                                 <td><%= new Date(u.created_at).toLocaleDateString() %></td>
+                                                <td style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="<%= u.last_login_device %>">
+                                                    <small class="d-block text-muted"><%= u.last_login_device || 'No data' %></small>
+                                                    <span class="badge bg-light text-dark border"><%= u.last_login_ip || 'No IP' %></span>
+                                                </td>
                                                 <td>
                                                     <form action="/admin/reset-password" method="POST" class="d-inline" onsubmit="return confirm('Reset password for <%= u.email %> to 12345678?');">
                                                         <input type="hidden" name="target_user_id" value="<%= u.id %>">
@@ -138,7 +143,7 @@
                                         <% }) %>
                                     <% } else { %>
                                         <tr>
-                                            <td colspan="7" class="text-center py-5 text-muted">No users found.</td>
+                                            <td colspan="8" class="text-center py-5 text-muted">No users found.</td>
                                         </tr>
                                     <% } %>
                                 </tbody>

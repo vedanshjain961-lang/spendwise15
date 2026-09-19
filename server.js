@@ -64,6 +64,11 @@ app.post('/login', async (req, res) => {
     try {
         const user = await dbGet(`SELECT * FROM users WHERE email = ?`, [email]);
         if (user && await bcrypt.compare(password, user.password_hash)) {
+            // Capture device and IP
+            const device = req.headers['user-agent'] || 'Unknown';
+            const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'Unknown';
+            await dbRun(`UPDATE users SET last_login_device = ?, last_login_ip = ? WHERE id = ?`, [device, ip, user.id]);
+            
             req.session.user = user;
             res.redirect('/dashboard');
         } else {

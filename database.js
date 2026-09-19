@@ -29,11 +29,15 @@ const initializeDatabase = async () => {
             monthly_allowance REAL DEFAULT 0.00,
             currency TEXT DEFAULT 'INR',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            is_admin BOOLEAN DEFAULT FALSE
+            is_admin BOOLEAN DEFAULT FALSE,
+            last_login_device TEXT,
+            last_login_ip TEXT
         )`);
 
-        // Upgrade existing table if it was already created before we added the is_admin column
+        // Upgrade existing table if it was already created before we added new columns
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;`);
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_device TEXT;`);
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_ip TEXT;`);
 
         // Create Categories
         await pool.query(`CREATE TABLE IF NOT EXISTS categories (
