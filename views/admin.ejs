@@ -94,7 +94,7 @@
                 </div>
 
                 <!-- Users Table -->
-                <div class="card shadow-sm border-0">
+                <div class="card shadow-sm border-0 mb-4">
                     <div class="card-header bg-white border-bottom py-3">
                         <h5 class="mb-0 fw-bold">Registered Users</h5>
                     </div>
@@ -106,9 +106,10 @@
                                         <th>ID</th>
                                         <th>Name</th>
                                         <th>Email</th>
-                                        <th>College</th>
                                         <th>Role</th>
+                                        <th>Device / IP</th>
                                         <th>Joined</th>
+                                        <th class="text-end">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -118,7 +119,6 @@
                                                 <td>#<%= u.id %></td>
                                                 <td class="fw-medium"><%= u.name %></td>
                                                 <td><%= u.email %></td>
-                                                <td><%= u.college || 'N/A' %></td>
                                                 <td>
                                                     <% if (u.is_admin) { %>
                                                         <span class="badge bg-danger rounded-pill px-3 py-2">Admin</span>
@@ -126,12 +126,86 @@
                                                         <span class="badge bg-secondary rounded-pill px-3 py-2">User</span>
                                                     <% } %>
                                                 </td>
+                                                <td style="max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="<%= u.last_login_device %>">
+                                                    <small class="d-block text-muted"><%= u.last_login_device || 'No data' %></small>
+                                                    <span class="badge bg-light text-dark border"><%= u.last_login_ip || 'No IP' %></span>
+                                                </td>
                                                 <td><%= new Date(u.created_at).toLocaleDateString() %></td>
+                                                <td class="text-end">
+                                                    <!-- Toggle Admin -->
+                                                    <form action="/admin/toggle-admin" method="POST" class="d-inline" onsubmit="return confirm('Change admin status for <%= u.email %>?');">
+                                                        <input type="hidden" name="target_user_id" value="<%= u.id %>">
+                                                        <input type="hidden" name="current_status" value="<%= u.is_admin %>">
+                                                        <button type="submit" class="btn btn-sm btn-outline-primary mb-1" title="Toggle Admin Role"><i class="bi bi-shield-check"></i></button>
+                                                    </form>
+                                                    
+                                                    <!-- Reset Password -->
+                                                    <form action="/admin/reset-password" method="POST" class="d-inline" onsubmit="return confirm('Reset password for <%= u.email %> to 12345678?');">
+                                                        <input type="hidden" name="target_user_id" value="<%= u.id %>">
+                                                        <button type="submit" class="btn btn-sm btn-outline-warning mb-1" title="Reset Password"><i class="bi bi-key-fill"></i></button>
+                                                    </form>
+
+                                                    <!-- Delete User -->
+                                                    <form action="/admin/delete-user" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to completely delete <%= u.email %> and all their transactions? This cannot be undone!');">
+                                                        <input type="hidden" name="target_user_id" value="<%= u.id %>">
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger mb-1" title="Delete User"><i class="bi bi-trash-fill"></i></button>
+                                                    </form>
+                                                </td>
                                             </tr>
                                         <% }) %>
                                     <% } else { %>
                                         <tr>
-                                            <td colspan="6" class="text-center py-5 text-muted">No users found.</td>
+                                            <td colspan="7" class="text-center py-5 text-muted">No users found.</td>
+                                        </tr>
+                                    <% } %>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity Feed -->
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white border-bottom py-3">
+                        <h5 class="mb-0 fw-bold">Recent Platform Activity</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>User</th>
+                                        <th>Type</th>
+                                        <th>Category</th>
+                                        <th>Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% if (typeof recentActivity !== 'undefined' && recentActivity.length > 0) { %>
+                                        <% recentActivity.forEach(txn => { %>
+                                            <tr>
+                                                <td><small class="text-muted"><%= new Date(txn.created_at).toLocaleString() %></small></td>
+                                                <td>
+                                                    <span class="fw-medium"><%= txn.user_name %></span>
+                                                    <small class="d-block text-muted"><%= txn.user_email %></small>
+                                                </td>
+                                                <td>
+                                                    <% if (txn.type === 'INCOME') { %>
+                                                        <span class="badge bg-success">Income</span>
+                                                    <% } else { %>
+                                                        <span class="badge bg-danger">Expense</span>
+                                                    <% } %>
+                                                </td>
+                                                <td><%= txn.category_name || 'N/A' %></td>
+                                                <td class="fw-bold <%= txn.type === 'INCOME' ? 'text-success' : 'text-danger' %>">
+                                                    <%= txn.type === 'INCOME' ? '+' : '-' %><%= formatCurrency(txn.amount) %>
+                                                </td>
+                                            </tr>
+                                        <% }) %>
+                                    <% } else { %>
+                                        <tr>
+                                            <td colspan="5" class="text-center py-5 text-muted">No recent activity.</td>
                                         </tr>
                                     <% } %>
                                 </tbody>
