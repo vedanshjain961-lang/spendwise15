@@ -118,8 +118,18 @@ app.get('/admin', requireAdmin, async (req, res) => {
         const userCount = await dbGet(`SELECT COUNT(*) as count FROM users`);
         const totalVolume = await dbGet(`SELECT SUM(amount) as sum FROM transactions WHERE type='EXPENSE'`);
         
+        // Fetch global recent activity
+        const recentActivity = await dbQuery(`
+            SELECT t.*, u.name as user_name, u.email as user_email, c.name as category_name 
+            FROM transactions t 
+            JOIN users u ON t.user_id = u.id 
+            JOIN categories c ON t.category_id = c.id 
+            ORDER BY t.created_at DESC LIMIT 15
+        `);
+        
         res.render('admin', {
             users,
+            recentActivity,
             totalTransactions: txCount.count,
             totalUsers: userCount.count,
             totalVolume: totalVolume.sum || 0
@@ -133,13 +143,39 @@ app.get('/admin', requireAdmin, async (req, res) => {
 app.post('/admin/reset-password', requireAdmin, async (req, res) => {
     try {
         const { target_user_id } = req.body;
-        // Hash the temporary password '12345678'
         const newHash = await bcrypt.hash('12345678', 10);
         await dbRun(`UPDATE users SET password_hash = ? WHERE id = ?`, [newHash, target_user_id]);
         res.redirect('/admin');
     } catch (err) {
         console.error(err);
         res.status(500).send("Error resetting password");
+    }
+});
+
+app.post('/admin/toggle-admin', requireAdmin, async (req, res) => {
+    try {
+        const { target_user_id, current_status } = req.body;
+        const newStatus = current_status === 'true' ? false : true;
+        await dbRun(`UPDATE users SET is_admin = ? WHERE id = ?`, [newStatus, target_user_id]);
+        res.redirect('/admin');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error toggling admin status");
+    }
+});
+
+app.post('/admin/delete-user', requireAdmin, async (req, res) => {
+    try {
+        const { target_user_id } = req.body;
+        if (parseInt(target_user_id) === req.session.user.id) {
+            return res.status(400).send("You cannot delete yourself.");
+        }
+        await dbRun(`DELETE FROM transactions WHERE user_id = ?`, [target_user_id]);
+        await dbRun(`DELETE FROM users WHERE id = ?`, [target_user_id]);
+        res.redirect('/admin');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error deleting user");
     }
 });
 
