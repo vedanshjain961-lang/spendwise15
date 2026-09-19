@@ -28,8 +28,12 @@ const initializeDatabase = async () => {
             semester INTEGER,
             monthly_allowance REAL DEFAULT 0.00,
             currency TEXT DEFAULT 'INR',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            is_admin BOOLEAN DEFAULT FALSE
         )`);
+
+        // Upgrade existing table if it was already created before we added the is_admin column
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;`);
 
         // Create Categories
         await pool.query(`CREATE TABLE IF NOT EXISTS categories (

@@ -38,6 +38,16 @@ const requireAuth = (req, res, next) => {
     }
 };
 
+// Middleware for Admin only routes
+const requireAdmin = (req, res, next) => {
+    if (req.session && req.session.user && req.session.user.is_admin) {
+        res.locals.user = req.session.user;
+        next();
+    } else {
+        res.status(403).send("Forbidden: You must be an administrator to access this page.");
+    }
+};
+
 // ==== PUBLIC ROUTES ====
 
 app.get('/', (req, res) => {
@@ -95,6 +105,25 @@ app.get('/logout', (req, res) => {
 });
 
 // ==== PROTECTED ROUTES ====
+
+app.get('/admin', requireAdmin, async (req, res) => {
+    try {
+        const users = await dbQuery(`SELECT * FROM users ORDER BY created_at DESC`);
+        const txCount = await dbGet(`SELECT COUNT(*) as count FROM transactions`);
+        const userCount = await dbGet(`SELECT COUNT(*) as count FROM users`);
+        const totalVolume = await dbGet(`SELECT SUM(amount) as sum FROM transactions WHERE type='EXPENSE'`);
+        
+        res.render('admin', {
+            users,
+            totalTransactions: txCount.count,
+            totalUsers: userCount.count,
+            totalVolume: totalVolume.sum || 0
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Server Error");
+    }
+});
 
 // Helper formatting functions for views
 app.locals.formatCurrency = (amount) => '₹' + Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
